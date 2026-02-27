@@ -158,18 +158,29 @@ jobs:
       continue-on-error: true
       
     - name: Install Python 2
-      if: github.event.inputs.MANIFEST_BRANCH != 'twrp-11' && github.event.inputs.MANIFEST_BRANCH != 'twrp-12.1'  && github.event.inputs.MANIFEST_BRANCH != 'twrp-14'
+      if: github.event.inputs.MANIFEST_BRANCH != 'twrp-11' && github.event.inputs.MANIFEST_BRANCH != 'twrp-12.1'  && github.event.inputs.MANIFEST_BRANCH != 'twrp-14.1'
       run: |
         sudo apt -y install python2
         cd /usr/bin
         sudo ln -sf python2 python
 
-    - name: Building Image 
+    - name: Building Image
       run: |
         cd workspace
         source build/envsetup.sh
         export ALLOW_MISSING_DEPENDENCIES=true
-        lunch ${{ env.DEVICE_MAKEFILE }}-eng && make clean && make ${{ github.event.inputs.BUILD_TARGET }}image -j$(nproc --all)
+        # Android 14+ requires product-release-variant format
+        if lunch ${{ env.DEVICE_MAKEFILE }}-eng 2>/dev/null; then
+          echo "lunch succeeded with two-part combo"
+        elif lunch ${{ env.DEVICE_MAKEFILE }}-ap2a-eng 2>/dev/null; then
+          echo "lunch succeeded with ap2a release"
+        elif lunch ${{ env.DEVICE_MAKEFILE }}-trunk_staging-eng 2>/dev/null; then
+          echo "lunch succeeded with trunk_staging release"
+        else
+          echo "ERROR: All lunch combos failed"
+          exit 1
+        fi
+        make clean && make ${{ github.event.inputs.BUILD_TARGET }}image -j$(nproc --all)
         echo "Done building your ${{ github.event.inputs.BUILD_TARGET }}.img"
       
     - name: Set Build Date # Output will be use in Release
