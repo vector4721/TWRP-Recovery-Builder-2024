@@ -136,6 +136,15 @@ jobs:
         cd ${{ github.event.inputs.DEVICE_PATH }}
         echo "COMMIT_ID=$(git rev-parse HEAD)" >> $GITHUB_ENV
 
+    - name: Clone Common Device Tree (SM8450)
+      run: |
+        cd workspace
+        if [ -f ${{ github.event.inputs.DEVICE_PATH }}/twrp.dependencies ]; then
+          echo "Dependencies file found, cloning common tree..."
+          git clone --depth=1 https://github.com/Device-Tree-Archives/android_device_samsung_sm8450-common.git -b android-12.1 ./device/samsung/sm8450-common
+        fi
+      continue-on-error: true
+
     - name: Check Build Makefile
       run: |
         cd workspace
